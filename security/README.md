@@ -1,6 +1,10 @@
 # Pod Security Admission: cluster-level vs. namespace-level
 
-This directory has two scripts that both enforce the same [Pod Security Standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/) policy — `enforce: baseline`, `audit`/`warn: restricted` — but configure it through two different mechanisms built into the [Pod Security Admission (PSA)](https://kubernetes.io/docs/concepts/security/pod-security-admission/) controller:
+This directory also has `kind-with-encryption-at-rest.sh`, which is a different topic (etcd storage protection, not pod admission) — see its own comments and [`../secrets/README.md`](../secrets/README.md) for that one.
+
+One thing worth calling out about that script specifically: it generates its own AES key on the spot and owns that key's entire lifecycle itself — written to a plaintext file, read once, destroyed on cleanup. That's fine for a disposable demo, but it's *not* how you'd manage a real cluster's encryption key. With the `aescbc`/`aesgcm`/`secretbox` providers it uses, you (the cluster admin) are responsible for generating the key, copying the identical config to every API server replica, backing it up, and manually rotating it. For anything beyond a demo, the `kms` provider (stable since ~1.29) is the better answer — it delegates generation, rotation, and access policy to an external KMS (AWS KMS, GCP Cloud KMS, Vault Transit, etc.), and the API server never even sees the raw key.
+
+The rest of this file covers the two scripts that both enforce the same [Pod Security Standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/) policy — `enforce: baseline`, `audit`/`warn: restricted` — but configure it through two different mechanisms built into the [Pod Security Admission (PSA)](https://kubernetes.io/docs/concepts/security/pod-security-admission/) controller:
 
 | | `kind-with-cluster-level-baseline-pod-security.sh` | `namespace-level-baseline-pod-security.sh` |
 |---|---|---|
