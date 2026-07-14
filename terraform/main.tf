@@ -37,4 +37,9 @@ resource "helm_release" "learnkube" {
     name  = "appVersion"
     value = var.image_tag
   }
+
+  set {
+    name  = "greeting"
+    value = var.greeting
+  }
 }

@@ -27,3 +27,9 @@ variable "image_tag" {
   type        = string
   default     = "v1"
 }
+
+variable "greeting" {
+  description = "Greeting text served by the app, sourced from a ConfigMap"
+  type        = string
+  default     = "Hello"
+}

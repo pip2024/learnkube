@@ -14,6 +14,14 @@ spec:
       labels:
         app: learnkube
     spec:
+      initContainers:
+        - name: logshipper
+          restartPolicy: Always
+          image: busybox:1.36
+          command: ["sh", "-c", "touch /var/log/learnkube/app.log && tail -F /var/log/learnkube/app.log"]
+          volumeMounts:
+            - name: logs
+              mountPath: /var/log/learnkube
       containers:
         - name: learnkube
           image: learnkube:v1
@@ -23,3 +31,20 @@ spec:
           env:
             - name: APP_VERSION
               value: "v1"
+          volumeMounts:
+            - name: config
+              mountPath: /etc/config
+              readOnly: true
+            - name: logs
+              mountPath: /var/log/learnkube
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: config
+          configMap:
+            name: learnkube-config
+        - name: logs
+          emptyDir: {}
+        - name: data
+          persistentVolumeClaim:
+            claimName: learnkube-data

@@ -7,6 +7,12 @@ image:
 
 appVersion: v1
 
+greeting: Hello
+
+persistence:
+  size: 1Gi
+  storageClassName: ""
+
 service:
   type: NodePort
   port: 8080
