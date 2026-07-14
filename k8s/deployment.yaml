@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: learnkube
+  labels:
+    app: learnkube
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: learnkube
+  template:
+    metadata:
+      labels:
+        app: learnkube
+    spec:
+      containers:
+        - name: learnkube
+          image: learnkube:v1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: APP_VERSION
+              value: "v1"

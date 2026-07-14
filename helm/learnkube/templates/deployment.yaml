@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-learnkube
+  labels:
+    app: {{ .Release.Name }}-learnkube
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-learnkube
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-learnkube
+    spec:
+      containers:
+        - name: learnkube
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 8080
+          env:
+            - name: APP_VERSION
+              value: {{ .Values.appVersion | quote }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

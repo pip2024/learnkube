@@ -1,0 +1,14 @@
+replicaCount: 1
+
+image:
+  repository: learnkube
+  tag: v1
+  pullPolicy: IfNotPresent
+
+appVersion: v1
+
+service:
+  type: NodePort
+  port: 8080
+
+resources: {}
