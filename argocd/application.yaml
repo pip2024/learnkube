@@ -1,0 +1,87 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: learnkube
+  # This object itself lives in the "argocd" namespace (where the ArgoCD
+  # controller runs and looks for Application objects) -- separate from
+  # spec.destination.namespace below, which is where the *managed
+  # resources* (Deployment/Service/etc.) actually get deployed.
+  namespace: argocd
+  finalizers:
+    # A finalizer is a general Kubernetes mechanism, not an ArgoCD-specific
+    # one: when you `kubectl delete` an object that has one or more
+    # finalizers, Kubernetes doesn't remove it right away. It sets
+    # `metadata.deletionTimestamp` and leaves the object in "Terminating"
+    # state until every finalizer string has been removed by whatever
+    # controller registered it -- only once the list is empty does the
+    # object actually get deleted from etcd. If nothing ever removes a
+    # given finalizer, the object stays stuck in "Terminating" forever.
+    #
+    # Without this specific one, `kubectl delete` on this Application would
+    # only delete ArgoCD's record of it -- the Deployment/Service/etc. it
+    # deployed would be silently left running in the cluster. ArgoCD's
+    # `argocd-application-controller` watches for this exact string: on
+    # seeing `deletionTimestamp` set with this finalizer present, it first
+    # deletes every resource this Application manages, and only then
+    # removes the finalizer, letting the Application object's own deletion
+    # complete. (There's also a `/background` variant --
+    # `resources-finalizer.argocd.argoproj.io/background` -- which does the
+    # same cleanup but asynchronously in the background rather than
+    # blocking the Application's own deletion until it's done.)
+    #
+    # This isn't a resource/object in the cluster, or anything you could
+    # `kubectl get` -- it's just a string value in this array. Kubernetes'
+    # only built-in behavior around it is generic: don't finish deleting
+    # this object while its `finalizers` list is non-empty, and let
+    # controllers remove their own entries when done. The reverse-DNS-style
+    # name (like an annotation/label key) is just a naming convention to
+    # avoid collisions -- it has no special meaning to Kubernetes itself.
+    # This particular string only does anything because ArgoCD's
+    # controller specifically watches for it and reacts; an arbitrary
+    # made-up finalizer string would block deletion the same way, but with
+    # nothing to ever remove it, leaving the object stuck in "Terminating"
+    # forever.
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  # Which ArgoCD "AppProject" this Application belongs to -- AppProjects
+  # scope what repos/clusters/namespaces an Application is allowed to use.
+  # "default" is the built-in project ArgoCD ships with; fine for a single
+  # example like this, but a real multi-team setup would define its own
+  # AppProject per team to restrict what each one can deploy where.
+  project: default
+  source:
+    # Where to pull manifests from -- this project's own GitHub remote.
+    repoURL: https://github.com/pip2024/learnkube.git
+    # Which branch/tag/commit to track. ArgoCD polls this ref (or a
+    # webhook can push it immediately) and reconciles the cluster to
+    # whatever's at its tip -- this is the actual "source of truth" that
+    # replaces you running terraform/helm/kubectl by hand.
+    targetRevision: main
+    # Path within the repo to treat as the deployable unit. Because this
+    # points at a directory containing a Chart.yaml, ArgoCD auto-detects it
+    # as a Helm source and renders it as if by `helm template`, without a
+    # separate `spec.source.helm.*` block needed for the defaults.
+    path: helm/learnkube
+  destination:
+    # "https://kubernetes.default.svc" means the same cluster ArgoCD itself
+    # runs in (as opposed to a remote/registered cluster ArgoCD could also
+    # manage) -- fine here since this is all one minikube cluster.
+    server: https://kubernetes.default.svc
+    # Deliberately a separate namespace from the main README's Terraform/
+    # Helm CLI/kubectl deploys (which land in "default"), so this GitOps
+    # copy can exist side by side without any resource-name collisions.
+    namespace: learnkube-gitops
+  syncPolicy:
+    automated:
+      # Delete resources from the cluster that were removed from Git --
+      # without this, ArgoCD only ever adds/updates, never removes.
+      prune: true
+      # Continuously revert manual changes (e.g. `kubectl scale`, `kubectl
+      # edit`) back to what's declared in Git -- this is what makes ArgoCD
+      # a "pull"/reconciling model rather than a one-shot apply.
+      selfHeal: true
+    syncOptions:
+      # spec.destination.namespace ("learnkube-gitops") doesn't exist yet
+      # the first time this Application is applied -- this tells ArgoCD to
+      # create it, instead of failing because the namespace is missing.
+      - CreateNamespace=true

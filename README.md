@@ -16,6 +16,8 @@ k8s/         Plain Deployment/Service manifests, for deploying with kubectl dire
 - [Terraform](https://www.terraform.io/) with the `hashicorp/helm` provider (installed automatically on `terraform init`)
 - Docker
 
+**Windows**: run the `sh`-labeled commands below in **Git Bash** or **WSL**, not PowerShell/cmd.exe — a few of them (and all of the `.sh` scripts under `security/`) use POSIX-only syntax and tools (`base64`, `od`, heredocs) that don't exist there. `secrets/README.md` and `argocd/README.md` include PowerShell-native equivalents for the couple of spots where this actually comes up.
+
 ## 1. Start a cluster
 
 ```sh

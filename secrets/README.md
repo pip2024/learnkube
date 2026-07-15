@@ -42,6 +42,12 @@ Decode a field yourself to prove it's just encoding:
 kubectl get secret learnkube-db-credentials -o jsonpath='{.data.password}' | base64 -d
 ```
 
+**Windows PowerShell** has no `base64` command — either run this in Git Bash/WSL instead (recommended, since the rest of this project's `sh` code blocks assume a POSIX shell), or use the native equivalent:
+
+```powershell
+[System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String((kubectl get secret learnkube-db-credentials -o jsonpath='{.data.password}')))
+```
+
 ### As environment variables
 
 ```sh

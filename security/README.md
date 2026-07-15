@@ -1,5 +1,7 @@
 # Pod Security Admission: cluster-level vs. namespace-level
 
+**Windows users**: all three `.sh` scripts in this directory are POSIX shell scripts — heredocs, `head -c /dev/urandom`, `od`, the `bash -c`-or-`read` fallback for the pause prompt — none of which PowerShell or cmd.exe can run. Execute them from **Git Bash** or **WSL**, not PowerShell (e.g. `sh ./kind-with-cluster-level-baseline-pod-security.sh`, or `./script.sh` directly if it's marked executable).
+
 This directory also has `kind-with-encryption-at-rest.sh`, which is a different topic (etcd storage protection, not pod admission) — see its own comments and [`../secrets/README.md`](../secrets/README.md) for that one.
 
 One thing worth calling out about that script specifically: it generates its own AES key on the spot and owns that key's entire lifecycle itself — written to a plaintext file, read once, destroyed on cleanup. That's fine for a disposable demo, but it's *not* how you'd manage a real cluster's encryption key. With the `aescbc`/`aesgcm`/`secretbox` providers it uses, you (the cluster admin) are responsible for generating the key, copying the identical config to every API server replica, backing it up, and manually rotating it. For anything beyond a demo, the `kms` provider (stable since ~1.29) is the better answer — it delegates generation, rotation, and access policy to an external KMS (AWS KMS, GCP Cloud KMS, Vault Transit, etc.), and the API server never even sees the raw key.
