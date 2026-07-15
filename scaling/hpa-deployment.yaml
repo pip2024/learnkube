@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: learnkube-hpa
+  labels:
+    app: learnkube-hpa
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: learnkube-hpa
+  template:
+    metadata:
+      labels:
+        app: learnkube-hpa
+    spec:
+      containers:
+        - name: learnkube
+          image: learnkube:v1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          resources:
+            # "m" = millicpu (millicore), 1/1000th of one CPU core -- CPU is
+            # a compressible resource, so Kubernetes allows fractional cores
+            # via the Linux cgroup CPU quota mechanism. "100m" = 0.1 core =
+            # 10% of one core; "200m" = 0.2 core = 20%. requests.cpu is what
+            # the scheduler reserves when placing this pod, and it's also
+            # the denominator HPA computes utilization against (current
+            # usage / this request) -- a request MUST be set for CPU-based
+            # autoscaling to work at all, without it the HPA has nothing to
+            # divide by. limits.cpu is a hard ceiling: exceeding it gets the
+            # container throttled (slowed down), not killed, unlike a
+            # memory limit.
+            requests:
+              cpu: "100m"
+            limits:
+              cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: learnkube-hpa
+spec:
+  selector:
+    app: learnkube-hpa
+  ports:
+    - port: 8080
+      targetPort: 8080

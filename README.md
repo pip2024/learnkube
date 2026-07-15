@@ -19,7 +19,8 @@ Steps 1-11 below are the core walkthrough (Kubernetes Basics + Configuration tut
 4. **[`stateful/README.md`](stateful/README.md)** — StatefulSets: stable per-pod identity and a dedicated PVC per replica (`volumeClaimTemplates`), contrasted against step 11's single shared PVC.
 5. **[`argocd/README.md`](argocd/README.md)** — a 4th deploy path for the same Helm chart, via ArgoCD/GitOps: pull-based reconciliation from this repo instead of a push-based command from your machine.
 6. **[`operator/README.md`](operator/README.md)** — the Operator pattern: a custom `LearnKubeApp` CRD plus a small Python controller, explicitly framed as "the same CRD+controller mechanism argocd/ already relies on," just built from scratch for a toy resource.
-7. **[`otel/README.md`](otel/README.md)** — observability: instruments the shared app with OpenTelemetry (traces + metrics) and ships them to Grafana's all-in-one `otel-lgtm` image (Loki/Grafana/Tempo/Mimir), plus what a production observability setup does differently.
+7. **[`otel/README.md`](otel/README.md)** — observability: instruments the shared app with OpenTelemetry (traces + metrics + logs) and ships them to Grafana's all-in-one `otel-lgtm` image (Loki/Grafana/Tempo/Mimir), plus what a production observability setup does differently. See also [`otel/ARCHITECTURE.md`](otel/ARCHITECTURE.md) for how OTLP actually gets translated into each backend's storage model.
+8. **[`scaling/README.md`](scaling/README.md)** — three layers of "scaling": horizontal (HPA), vertical (in-place Pod resize), and node-level (Karpenter, covered conceptually only — it can't run against minikube).
 
 ## Prerequisites
 

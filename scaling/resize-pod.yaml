@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: learnkube-resize-demo
+  labels:
+    app: learnkube-resize-demo
+spec:
+  containers:
+    - name: learnkube
+      image: learnkube:v1
+      imagePullPolicy: IfNotPresent
+      ports:
+        - containerPort: 8080
+      resources:
+        requests:
+          cpu: "100m"
+          memory: "128Mi"
+        limits:
+          cpu: "200m"
+          memory: "256Mi"
+      # Governs whether a live resize needs a container restart to apply.
+      # CPU can change on the fly (a cgroup quota update); memory here is
+      # set to require a restart, since shrinking a container's memory
+      # limit live is only ever best-effort at preventing an OOM kill --
+      # see README.md.
+      resizePolicy:
+        - resourceName: cpu
+          restartPolicy: NotRequired
+        - resourceName: memory
+          restartPolicy: RestartContainer
