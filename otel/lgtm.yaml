@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-lgtm
+  labels:
+    app: otel-lgtm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otel-lgtm
+  template:
+    metadata:
+      labels:
+        app: otel-lgtm
+    spec:
+      containers:
+        - name: otel-lgtm
+          image: grafana/otel-lgtm:0.8.6
+          ports:
+            - name: grafana
+              containerPort: 3000
+            - name: otlp-grpc
+              containerPort: 4317
+            - name: otlp-http
+              containerPort: 4318
+          env:
+            # Turns on verbose internal logging for the bundled OTel
+            # Collector and Loki components specifically (the image
+            # suppresses this by default -- note "logging=false" in
+            # `kubectl logs -l app=otel-lgtm` without these). This is for
+            # debugging the collector/Loki themselves, separate from any
+            # app-level telemetry -- see github.com/grafana/docker-otel-lgtm.
+            - name: ENABLE_LOGS_OTELCOL
+              value: "true"
+            - name: ENABLE_LOGS_LOKI
+              value: "true"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-lgtm
+spec:
+  selector:
+    app: otel-lgtm
+  ports:
+    - name: grafana
+      port: 3000
+      targetPort: 3000
+    - name: otlp-grpc
+      port: 4317
+      targetPort: 4317
+    - name: otlp-http
+      port: 4318
+      targetPort: 4318

@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: learnkube-otel
+  labels:
+    app: learnkube-otel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: learnkube-otel
+  template:
+    metadata:
+      labels:
+        app: learnkube-otel
+    spec:
+      containers:
+        - name: learnkube
+          image: learnkube:v1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: APP_VERSION
+              value: "v1"
+            - name: OTEL_SERVICE_NAME
+              value: "learnkube"
+            # Points the app's OTLP exporters at the otel-lgtm Service's
+            # gRPC receiver (port 4317). This is the one env var that turns
+            # the no-op OpenTelemetry API in server.py into a real,
+            # exporting SDK -- see the comment above OTEL_ENDPOINT there.
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://otel-lgtm:4317"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: learnkube-otel
+spec:
+  selector:
+    app: learnkube-otel
+  ports:
+    - port: 8080
+      targetPort: 8080
