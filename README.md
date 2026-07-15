@@ -9,6 +9,17 @@ terraform/   Terraform config that installs the Helm chart onto your cluster
 k8s/         Plain Deployment/Service manifests, for deploying with kubectl directly
 ```
 
+## Examples in this repo
+
+Steps 1-11 below are the core walkthrough (Kubernetes Basics + Configuration tutorials). Beyond that, each topic below got its own self-contained example as this project grew — recommended reading order if you're going through all of them:
+
+1. **Steps 1-11 in this file** — deploy/explore/expose/scale/update (Kubernetes Basics), then ConfigMap/sidecar/PersistentVolume (Configuration) — three parallel deploy paths (Terraform, Helm CLI, plain `kubectl`) throughout.
+2. **[`secrets/README.md`](secrets/README.md)** — Secrets: `stringData` vs `data`, env-var-vs-volume-mount update semantics (same lesson as step 9's ConfigMap), and why base64 isn't encryption.
+3. **[`security/README.md`](security/README.md)** — Pod Security Admission at the cluster level vs. namespace level, and (picking up secrets/'s "base64 isn't encryption" point) an encryption-at-rest demo proving what an unencrypted vs. encrypted Secret actually looks like in etcd.
+4. **[`stateful/README.md`](stateful/README.md)** — StatefulSets: stable per-pod identity and a dedicated PVC per replica (`volumeClaimTemplates`), contrasted against step 11's single shared PVC.
+5. **[`argocd/README.md`](argocd/README.md)** — a 4th deploy path for the same Helm chart, via ArgoCD/GitOps: pull-based reconciliation from this repo instead of a push-based command from your machine.
+6. **[`operator/README.md`](operator/README.md)** — the Operator pattern: a custom `LearnKubeApp` CRD plus a small Python controller, explicitly framed as "the same CRD+controller mechanism argocd/ already relies on," just built from scratch for a toy resource.
+
 ## Prerequisites
 
 - [minikube](https://minikube.sigs.k8s.io/) (or any local cluster) + `kubectl`, running **Kubernetes 1.29+** (needed for native sidecar containers, used in step 10)

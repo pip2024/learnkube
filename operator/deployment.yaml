@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: learnkube-operator
+  namespace: default
+  labels:
+    app: learnkube-operator
+spec:
+  # Deliberately 1, not just a default left untouched: every @kopf.on.*
+  # handler in controller/handlers.py runs inside this one pod's single
+  # process -- there's no leader election (kopf calls its version of this
+  # "peering") configured here. Scaling this up would start multiple
+  # identical processes all watching and reconciling the same
+  # LearnKubeApp objects concurrently, with nothing to stop them racing
+  # each other. See README.md's "One pod runs both handlers" section.
+  replicas: 1
+  selector:
+    matchLabels:
+      app: learnkube-operator
+  template:
+    metadata:
+      labels:
+        app: learnkube-operator
+    spec:
+      serviceAccountName: learnkube-operator
+      containers:
+        - name: operator
+          image: learnkube-operator:v1
+          imagePullPolicy: IfNotPresent

@@ -1,0 +1,109 @@
+# This object itself is handled entirely by the built-in API server -- not
+# by our operator. Creating it (`kubectl apply -f crd.yaml`) is what makes
+# the API server dynamically register a brand new REST resource/endpoint
+# at runtime, the same way built-in kinds like Pod or Deployment already
+# have one, just compiled in instead of created on the fly like this.
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  # CRD object names are required to be exactly "<plural>.<group>" -- this
+  # has to match spec.names.plural + spec.group below verbatim. The API
+  # server uses this to guarantee no two CRDs in the cluster can ever
+  # register the same REST path.
+  name: learnkubeapps.learnkube.dev
+spec:
+  # Becomes part of the actual HTTP path clients (kubectl, our operator,
+  # curl) hit: /apis/learnkube.dev/v1/... It's also what disambiguates this
+  # resource if its short name/kind ever collided with something else --
+  # `kubectl get learnkubeapps.learnkube.dev` is the fully-qualified form.
+  group: learnkube.dev
+  # Namespaced vs Cluster controls whether the generated REST path includes
+  # a /namespaces/{namespace}/ segment -- exactly the same mechanism that
+  # makes Pods namespaced and Nodes cluster-scoped. Namespaced here means
+  # each LearnKubeApp belongs to one namespace, same as our Deployments.
+  scope: Namespaced
+  names:
+    # What clients see in the object's own `kind:` field, and what
+    # `kubectl describe`/`kubectl get -o wide` prints as the resource type.
+    kind: LearnKubeApp
+    # The literal path segment for every request: GET/POST/PATCH/DELETE
+    # against /apis/learnkube.dev/v1/namespaces/{ns}/learnkubeapps[/{name}].
+    # This is also the exact string `kubectl get learnkubeapps` matches.
+    plural: learnkubeapps
+    # `singular`/`shortNames` are pure kubectl-CLI convenience -- they let
+    # you type `kubectl get learnkubeapp demo` or `kubectl get lka` instead
+    # of the full plural, but neither one changes the actual REST path.
+    singular: learnkubeapp
+    shortNames: ["lka"]
+  versions:
+    # Becomes the version segment of the path (.../learnkube.dev/v1/...). A
+    # CRD can list several versions at once for API evolution (e.g. v1beta1
+    # alongside v1, bridged by a conversion webhook) -- we only ever have
+    # the one here, so there's nothing to convert between.
+    - name: v1
+      # Whether the API server actually exposes *this* version over HTTP
+      # for clients to call. A version can exist in a CRD purely for
+      # on-disk/storage purposes (see `storage` below) without being
+      # `served` at all -- not the case here, but it's a separate knob.
+      served: true
+      # Exactly one version across the whole CRD must be the storage
+      # version -- the schema etcd actually persists objects as. If there
+      # were multiple `served` versions, requests against the non-storage
+      # ones would get converted on the fly; with only one version, this
+      # just has to be true.
+      storage: true
+      schema:
+        # This is enforced by the API server itself, before the object is
+        # ever written to etcd or seen by our operator: a `kubectl apply`
+        # with a `spec.replicas` of the wrong type, or an unknown field the
+        # schema doesn't allow, gets rejected right here, at the API layer.
+        # It's also exactly what powers `kubectl explain learnkubeapp.spec`.
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                replicas:
+                  type: integer
+                  minimum: 0
+                  default: 1
+                greeting:
+                  type: string
+                  default: "Hello"
+                image:
+                  type: string
+                  default: "learnkube:v1"
+            # `x-kubernetes-preserve-unknown-fields` on `status` (rather
+            # than giving it concrete typed properties like `spec` has)
+            # tells the API server's schema-pruning not to strip out
+            # whatever free-form keys the operator writes here (see the
+            # dict `reconcile()` returns in controller/handlers.py) -- with
+            # a structural schema, fields with no declared type are
+            # normally dropped on write, which would silently eat the
+            # operator's status updates.
+            #
+            # There's deliberately no `subresources: { status: {} }` block
+            # below -- see "Subresources, and why .status here isn't one"
+            # in README.md for what that would change (a separate /status
+            # endpoint, with its own RBAC and no cross-clobbering between
+            # spec-editors and the controller) and why this example skips it.
+            status:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+      # Purely a kubectl/API-server display feature -- these become the
+      # extra columns in `kubectl get learnkubeapps`. Technically it's the
+      # API server performing a server-side Table conversion (the same
+      # thing that happens under the hood whenever kubectl asks for
+      # `application/json;as=Table;...`); it has zero effect on storage or
+      # on what the operator does with the object.
+      additionalPrinterColumns:
+        - name: Replicas
+          type: integer
+          jsonPath: .spec.replicas
+        - name: Greeting
+          type: string
+          jsonPath: .spec.greeting
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
